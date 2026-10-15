@@ -53,3 +53,21 @@ RETRY_BACKOFF_SECONDS = 5
 # ============================================================
 LOG_LEVEL = "INFO"
 LOG_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
+
+# ============================================================
+# WIND Toolkit parameters
+# ============================================================
+
+WIND_ENDPOINT = (
+    "https://developer.nlr.gov/api/wind-toolkit/v2/wind/"
+    "wtk-download.csv"
+)
+
+WIND_HUB_HEIGHT = 80  # meters
+
+WIND_ATTRIBUTES = [
+    "windspeed_80m",
+    "winddirection_80m",
+    "temperature_80m",
+    "pressure_100m",
+]

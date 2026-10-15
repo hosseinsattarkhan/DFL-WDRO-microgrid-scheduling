@@ -25,7 +25,10 @@ def main() -> int:
         paths = download_nsrdb()
         logger.info("NSRDB done: %s", list(paths.keys()))
     if args.dataset in ("wind", "all"):
-        logger.info("WIND Toolkit download not yet implemented")
+        from .download_wind import download_wind
+        logger.info("Starting WIND Toolkit download")
+        paths = download_wind()
+        logger.info("WIND done: %s", list(paths.keys()))
     if args.dataset in ("miso", "all"):
         logger.info("MISO download not yet implemented")
     return 0
