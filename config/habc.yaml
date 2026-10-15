@@ -1,0 +1,12 @@
+﻿habc:
+  population_size: 50
+  abandonment_limit: 20
+  max_iterations: 500
+  adaptive_tolerance: 1e-3
+  subgradient_step: 0.01
+  gaussian_sigma: 0.01
+  injection_probability: 0.05
+  uniform_mixture_beta: 0.5
+  archive_size: 1
+  n_workers: 8
+  random_seed: 42

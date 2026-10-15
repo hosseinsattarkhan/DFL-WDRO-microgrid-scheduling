@@ -1,0 +1,27 @@
+﻿venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ipynb_checkpoints/
+.DS_Store
+*.gdx
+*.lst
+*.g00
+*.g01
+*.log
+
+# Data (large, use external storage)
+data/raw/
+data/processed/
+
+# Results (regenerated)
+results/logs/
+results/figures/
+
+# Model outputs
+models/gams/data/*.gdx
+
+# Keep empty directories via .gitkeep
+!**/.gitkeep

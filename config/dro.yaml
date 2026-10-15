@@ -1,0 +1,18 @@
+﻿dro:
+  N: 100
+  wasserstein_order: 1
+  epsilon: 0.05
+  ccg_tolerance: 1e-4
+  max_ccg_iterations: 100
+  mip_gap_master: 1e-4
+  mip_gap_separation: 1e-6
+  time_limit_hours: 4
+
+solvers:
+  pyomo_master: "appsi_highs"
+  pyomo_separation: "appsi_highs"
+  pyomo_mccormick: "appsi_highs"
+  pyomo_inner_lp: "appsi_highs"
+  gams_master: "highs"
+  gams_separation: "highs"
+  gams_mccormick: "highs"

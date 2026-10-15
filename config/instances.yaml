@@ -1,0 +1,37 @@
+﻿instances:
+  small:
+    name: "IEEE 33-bus"
+    bus_file: "data/instances/ieee33.yaml"
+    n_pv: 2
+    n_wind: 2
+    n_dg: 3
+    n_ess: 1
+    series_count: 5
+    T: 288
+  medium:
+    name: "IEEE 69-bus"
+    bus_file: "data/instances/ieee69.yaml"
+    n_pv: 5
+    n_wind: 4
+    n_dg: 6
+    n_ess: 3
+    series_count: 7
+    T: 288
+  large:
+    name: "IEEE 118-bus"
+    bus_file: "data/instances/ieee118.yaml"
+    n_pv: 12
+    n_wind: 8
+    n_dg: 15
+    n_ess: 6
+    series_count: 10
+    T: 288
+  very_large:
+    name: "3x IEEE 118-bus (354-bus)"
+    bus_file: "data/instances/ieee118_x3.yaml"
+    n_pv: 30
+    n_wind: 20
+    n_dg: 40
+    n_ess: 15
+    series_count: 15
+    T: 288

@@ -1,0 +1,29 @@
+﻿data:
+  year_start: 2010
+  year_end: 2012
+  train_years: [2010, 2011]
+  validation_period: "2012-H1"
+  test_period: "2012-H2"
+
+  locations:
+    solar:
+      lat: 33.45
+      lon: -112.07
+    wind:
+      lat: 33.45
+      lon: -112.07
+      hub_height: 80
+    price:
+      pnode: "MINN.HUB"
+      market: "DA"
+
+  resolution_minutes: 5
+  T: 288
+
+preprocessing:
+  interpolation: "linear"
+  price_hold_within_hour: true
+  missing_threshold_pct: 0.5
+  missing_method: "forward_fill"
+  standardize: true
+  bootstrap_B: 1000
