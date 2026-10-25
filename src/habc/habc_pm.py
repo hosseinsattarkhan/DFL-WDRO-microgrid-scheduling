@@ -111,8 +111,7 @@ class HABC_PM:
             return -np.inf
     
     def _perturb(self, xi, idx):
-        """بهبود یک سناریو با استفاده از Subgradient یا Perturbation"""
-        # نسخه ساده: یک بردار گاوسی به xi اضافه کن (محدود به [0,1])
+        """بهبود یک سناریو با استفاده از Perturbation تصادفی"""
         new_xi = xi + np.random.normal(0, 0.05, len(xi))
         new_xi = np.clip(new_xi, 0, 1)
         return new_xi
@@ -120,7 +119,7 @@ class HABC_PM:
     def _inject_bernoulli(self):
         """تزریق برنولی: با احتمال p یک سناریوی تصادفی اضافه کن"""
         if np.random.rand() < self.p_inject:
-            # نصف از سناریوهای تجربی، نصف تصادفی
+            # 50% از سناریوهای تجربی، 50% تصادفی
             if np.random.rand() < 0.5:
                 idx = np.random.randint(len(self.scenarios))
                 s = self.scenarios[idx]
@@ -128,6 +127,7 @@ class HABC_PM:
             else:
                 return np.random.uniform(0, 1, 3 * self.T)
         return None
+    
     
     def run(self):
         """اجرای الگوریتم HABC-PM"""
