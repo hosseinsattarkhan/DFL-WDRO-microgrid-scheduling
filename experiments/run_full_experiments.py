@@ -43,10 +43,12 @@ def run_ccg_habc_for_instance(instance_name, scenarios, epsilon=0.1, max_iter=10
         if current_LB > LB:
             LB = current_LB
         
-        # UB از Master: z + epsilon
-        current_UB = pyo.value(master_model.z) + epsilon
+
+        # UB از Master (z)
+        current_UB = pyo.value(master_model.z)  # بدون epsilon
         if current_UB < UB:
-            UB = current_UB
+            UB = current_UB 
+
         
         u_gen_vals = [pyo.value(master_model.u_gen[t]) for t in range(24)]
         best_u_gen = u_gen_vals
@@ -54,9 +56,9 @@ def run_ccg_habc_for_instance(instance_name, scenarios, epsilon=0.1, max_iter=10
         print(f"LB: {current_LB:.4f} (بهترین: {LB:.4f})")
         print(f"UB (از Master): {current_UB:.4f} (بهترین: {UB:.4f})")
         
-        # === گام ۲: حل Separation با HABC-PM (فقط برای افزودن سناریو) ===
+        # === گام ۲: حل Separation با HABC-PM ===
         habc = HABC_PM(u_gen_vals, scenarios, epsilon=epsilon,
-                       pop_size=15, max_iter=20, p_inject=0.05)
+                       pop_size=15, max_iter=20, p_inject=0.01)  # p_inject کاهش یافت
         best = habc.run()
         
         worst_scenario = {
@@ -65,7 +67,13 @@ def run_ccg_habc_for_instance(instance_name, scenarios, epsilon=0.1, max_iter=10
             'price': best['price'].tolist()
         }
         
-        print(f"HABC Fitness (سناریوی جدید): {best['fitness']:.4f}")
+        # فقط اگر HABC-PM سناریوی بهتری پیدا کرد، آن را اضافه کن
+        # (این کار از افزایش بی‌رویه LB جلوگیری می‌کند)
+        if best['fitness'] > current_LB:
+            scenarios.append(worst_scenario)
+            print(f"✅ سناریوی جدید اضافه شد (fitness = {best['fitness']:.4f})")
+        else:
+            print(f"⚠️ HABC-PM سناریوی بهتری پیدا نکرد (fitness = {best['fitness']:.4f})")
         
         # === گام ۳: بررسی همگرایی ===
         gap = abs(UB - LB) / max(abs(UB), 1e-10)
@@ -83,9 +91,6 @@ def run_ccg_habc_for_instance(instance_name, scenarios, epsilon=0.1, max_iter=10
             print(f"✅ همگرایی در تکرار {k+1} (Gap = {gap*100:.2f}% < {tol*100}%)")
             converged = True
             break
-        
-        # === گام ۴: افزودن سناریو ===
-        scenarios.append(worst_scenario)
     
     total_time = time.time() - start_time
     
@@ -116,7 +121,7 @@ def main():
     EPSILON = 0.1
     MAX_ITER = 10
     TOL = 0.01
-    INSTANCES = ["small"]
+    INSTANCES = ["small", "medium", "large", "very_large"]
     
     os.makedirs("results/tables", exist_ok=True)
     os.makedirs("results/logs", exist_ok=True)
