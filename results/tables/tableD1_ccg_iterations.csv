@@ -1,0 +1,3 @@
+Instance,Iteration,LB,UB,Gap (%)
+Small (Single-Bus),1,2.2069,2.2069,0.00
+IEEE 33-bus,1,1.4462,1.4462,0.00

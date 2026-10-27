@@ -19,12 +19,15 @@ class HABC_PM:
         self.abandonment_limit = abandonment_limit
         self.T = 24
         
+        # شمارنده‌های تشخیصی
+        self.scout_fires = 0
+        self.iteration_log = []  # برای D3
+        
         self.population = self._init_population()
         self.fitness = np.array([self._evaluate(ind) for ind in self.population])
         self.trial_counters = np.zeros(pop_size)
         
     def _init_population(self):
-        """ساخت جمعیت اولیه فقط از سناریوهای Master با نویز بسیار کوچک"""
         population = []
         for i in range(self.pop_size):
             idx = np.random.randint(len(self.scenarios))
@@ -92,13 +95,11 @@ class HABC_PM:
             return -np.inf
     
     def _perturb(self, xi, idx):
-        """بهبود یک سناریو با استفاده از Perturbation بسیار کوچک"""
         new_xi = xi + np.random.normal(0, 0.01, len(xi))
         new_xi = np.clip(new_xi, 0, 1)
         return new_xi
     
     def _inject_bernoulli(self):
-        """تزریق برنولی: با احتمال p یک سناریوی جدید اضافه کن"""
         if np.random.rand() < self.p_inject:
             idx = np.random.randint(len(self.scenarios))
             s = self.scenarios[idx]
@@ -112,6 +113,7 @@ class HABC_PM:
         best_fit = np.max(self.fitness)
         
         for iteration in range(self.max_iter):
+            # Employed Bees
             for i in range(self.pop_size):
                 new_xi = self._perturb(self.population[i], i)
                 new_fit = self._evaluate(new_xi)
@@ -122,6 +124,7 @@ class HABC_PM:
                 else:
                     self.trial_counters[i] += 1
             
+            # Onlooker Bees
             probs = self.fitness - np.min(self.fitness) + 1e-6
             probs = probs / np.sum(probs)
             for _ in range(self.pop_size):
@@ -135,6 +138,7 @@ class HABC_PM:
                 else:
                     self.trial_counters[i] += 1
             
+            # Scout Bees
             for i in range(self.pop_size):
                 if self.trial_counters[i] > self.abandonment_limit:
                     idx = np.random.randint(len(self.scenarios))
@@ -143,7 +147,9 @@ class HABC_PM:
                     self.population[i] = np.clip(base + np.random.normal(0, 0.01, len(base)), 0, 1)
                     self.fitness[i] = self._evaluate(self.population[i])
                     self.trial_counters[i] = 0
+                    self.scout_fires += 1  # افزایش شمارنده
             
+            # Bernoulli Injection
             injected = self._inject_bernoulli()
             if injected is not None:
                 worst_idx = np.argmin(self.fitness)
@@ -157,12 +163,18 @@ class HABC_PM:
                 best_fit = current_best_fit
                 best_xi = self.population[np.argmax(self.fitness)].copy()
             
-            if (iteration + 1) % 10 == 0:
-                print(f"  HABC Iter {iteration+1}: Best Fitness = {best_fit:.4f}")
+            # ذخیره لاگ تکرار (برای D3)
+            self.iteration_log.append({
+                'iteration': iteration + 1,
+                'best_fitness': float(best_fit),
+                'scout_fires': int(self.scout_fires)
+            })
         
         return {
             'pv': best_xi[:self.T],
             'wind': best_xi[self.T:2*self.T],
             'price': best_xi[2*self.T:],
-            'fitness': best_fit
+            'fitness': best_fit,
+            'scout_fires': self.scout_fires,
+            'iteration_log': self.iteration_log
         }
