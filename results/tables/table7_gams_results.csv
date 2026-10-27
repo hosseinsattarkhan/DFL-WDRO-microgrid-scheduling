@@ -1,0 +1,3 @@
+Instance,Solver,Objective,Time (s)
+Small (Single-Bus),CPLEX (GAMS),1.258608,0.34
+IEEE 33-bus,CPLEX (GAMS),9.078670,0.42

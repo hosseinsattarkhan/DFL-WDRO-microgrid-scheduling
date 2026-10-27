@@ -2,28 +2,26 @@ $Title Master Problem for Single-Bus Microgrid (C&CG)
 $Offlisting
 
 * ============================================================
-* Sets
+* Sets (با مقادیر متنی برای همخوانی با فایل .inc)
 * ============================================================
-Set T /1*24/;
-Set N /1*10/;
+Set T /'1'*'24'/;
+Set N /'1'*'10'/;
 
 * ============================================================
-* Parameters (بارگذاری از فایل داده)
+* Parameters
 * ============================================================
 Parameter pv_avail(N, T);
 Parameter wind_avail(N, T);
 Parameter price(N, T);
 
-* بارگذاری مقادیر واقعی از فایل تولیدشده توسط پایتون
 $include "C:/Users/Lenovo/Desktop/dfl_wdro_microgrid/models/gams/data_master.inc"
 
-* پارامترهای ثابت
 Parameter demand(T) / #T 1.0 /;
-Parameter dg_cap /0.5/;
-Parameter pv_cap /1.0/;
-Parameter wind_cap /1.0/;
-Parameter ess_cap /0.5/;
-Parameter ess_eff /0.9/;
+Scalar dg_cap /0.5/;
+Scalar pv_cap /1.0/;
+Scalar wind_cap /1.0/;
+Scalar ess_cap /0.5/;
+Scalar ess_eff /0.9/;
 
 * ============================================================
 * Variables
@@ -50,27 +48,20 @@ Equation dg_limit(N, T);
 Equation soc_dyn(N, T);
 Equation z_def(N);
 
-* Objective: Min-Max (z)
 obj_def.. z =e= z;
 
-* Power balance
 power_balance(n, t)..
     pv_used(n, t) * pv_cap + wind_used(n, t) * wind_cap + dg_gen(n, t)
     + ess_dis(n, t) - ess_ch(n, t) + grid_buy(n, t) - grid_sell(n, t)
     =e= demand(t);
 
-* PV and Wind limits
 pv_limit(n, t).. pv_used(n, t) =l= pv_avail(n, t);
 wind_limit(n, t).. wind_used(n, t) =l= wind_avail(n, t);
-
-* DG limit
 dg_limit(n, t).. dg_gen(n, t) =l= u_gen(t) * dg_cap;
 
-* Battery SOC dynamics
 soc_dyn(n, t)..
     soc(n, t) =e= soc(n, t-1) + ess_ch(n, t) * ess_eff - ess_dis(n, t) / ess_eff;
 
-* z >= cost of each scenario
 z_def(n)..
     z =g= sum(t, price(n, t) * (grid_buy(n, t) - grid_sell(n, t) + dg_gen(n, t) * 0.1));
 
