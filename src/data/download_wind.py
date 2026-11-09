@@ -18,8 +18,10 @@ from .config import (
     LOG_LEVEL,
     LOG_FORMAT,
 )
+
 logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT)
 logger = logging.getLogger(__name__)
+
 def _build_params(year: int) -> dict:
     """Build the API query parameters for one year."""
     return {
@@ -32,6 +34,7 @@ def _build_params(year: int) -> dict:
         "leap_day": "false",
         "utc": "false",
     }
+
 def _download_one_year(year: int) -> pd.DataFrame:
     """Download a single year with retries."""
     params = _build_params(year)
@@ -53,8 +56,10 @@ def _download_one_year(year: int) -> pd.DataFrame:
         if attempt < MAX_RETRIES:
             time.sleep(RETRY_BACKOFF_SECONDS * attempt)
     raise RuntimeError(f"Failed to download year {year} after {MAX_RETRIES} attempts") from last_error
+
 def download_wind(years: list[int] | None = None) -> dict[int, Path]:
     """Download WIND Toolkit data for the given years.
+
     Returns
     -------
     dict[int, Path]
@@ -64,6 +69,7 @@ def download_wind(years: list[int] | None = None) -> dict[int, Path]:
         raise ValueError("NLR_API_KEY environment variable is not set")
     if not NLR_EMAIL:
         raise ValueError("NLR_EMAIL environment variable is not set")
+    
     years = years or YEARS
     saved_paths: dict[int, Path] = {}
     for year in years:
@@ -73,6 +79,7 @@ def download_wind(years: list[int] | None = None) -> dict[int, Path]:
         logger.info("Saved %s", out_path)
         saved_paths[year] = out_path
     return saved_paths
+
 if __name__ == "__main__":
     paths = download_wind()
     for year, path in paths.items():

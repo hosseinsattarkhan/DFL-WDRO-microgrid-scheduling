@@ -3,25 +3,25 @@ import numpy as np
 
 def load_scenarios(file_path="data/processed/dataset_hourly_2010_2012.csv", num_scenarios=10):
     """
-    خواندن داده‌ها و تبدیل به سناریوهای عدم قطعیت (ξ)
-    در نسخه تک‌باس، هر روز را به عنوان یک سناریو در نظر می‌گیریم.
+    Load data and convert it to uncertainty scenarios (xi).
+    In the single-bus version, each day is treated as one scenario.
     """
     df = pd.read_csv(file_path, parse_dates=['Timestamp'])
     df = df.set_index('Timestamp')
     
-    # محاسبه تولید PV نرمالایز شده (0 تا 1) بر اساس GHI
-    # فرض می‌کنیم ظرفیت PV = 1 MW است
+    # Normalized PV generation (0 to 1) based on GHI
+    # Assume PV capacity = 1 MW
     df['PV_gen'] = df['GHI'] / df['GHI'].max()
     
-    # محاسبه تولید Wind نرمالایز شده (0 تا 1) بر اساس سرعت باد
-    # فرض می‌کنیم ظرفیت بادی = 1 MW است
+    # Normalized Wind generation (0 to 1) based on wind speed
+    # Assume Wind capacity = 1 MW
     df['Wind_gen'] = df['WindSpeed_80m'] / df['WindSpeed_80m'].max()
     
-    # نرمالایز کردن قیمت (فقط برای تست، در واقعیت قیمت نباید نرمالایز شود)
-    # اما چون مدل Master یک مسئله کوچک است، این کار باعث می‌شود اعداد بزرگ نشوند.
+    # Normalize price (for testing only; in practice, price should not be normalized)
+    # But since the Master model is a small problem, this keeps the numbers manageable.
     df['Price_norm'] = df['Price'] / df['Price'].max()
     
-    # استخراج سناریوها (مثلاً 10 روز اول به عنوان نمونه)
+    # Extract scenarios (e.g., first 10 days as samples)
     scenarios = []
     for day in range(num_scenarios):
         start_idx = day * 24

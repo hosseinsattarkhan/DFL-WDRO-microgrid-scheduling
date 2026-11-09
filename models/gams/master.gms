@@ -2,7 +2,7 @@ $Title Master Problem for Single-Bus Microgrid (C&CG)
 $Offlisting
 
 * ============================================================
-* Sets (با مقادیر متنی برای همخوانی با فایل .inc)
+* Sets (textual values to match the .inc file)
 * ============================================================
 Set T /'1'*'24'/;
 Set N /'1'*'10'/;

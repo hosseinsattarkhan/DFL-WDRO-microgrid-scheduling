@@ -19,6 +19,7 @@ data/processed/
 # Results (regenerated)
 results/logs/
 results/figures/
+results/tables/
 
 # Model outputs
 models/gams/data/*.gdx

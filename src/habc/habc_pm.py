@@ -19,9 +19,9 @@ class HABC_PM:
         self.abandonment_limit = abandonment_limit
         self.T = 24
         
-        # شمارنده‌های تشخیصی
+        # Diagnostic counters
         self.scout_fires = 0
-        self.iteration_log = []  # برای D3
+        self.iteration_log = []
         
         self.population = self._init_population()
         self.fitness = np.array([self._evaluate(ind) for ind in self.population])
@@ -147,7 +147,7 @@ class HABC_PM:
                     self.population[i] = np.clip(base + np.random.normal(0, 0.01, len(base)), 0, 1)
                     self.fitness[i] = self._evaluate(self.population[i])
                     self.trial_counters[i] = 0
-                    self.scout_fires += 1  # افزایش شمارنده
+                    self.scout_fires += 1
             
             # Bernoulli Injection
             injected = self._inject_bernoulli()
@@ -163,7 +163,6 @@ class HABC_PM:
                 best_fit = current_best_fit
                 best_xi = self.population[np.argmax(self.fitness)].copy()
             
-            # ذخیره لاگ تکرار (برای D3)
             self.iteration_log.append({
                 'iteration': iteration + 1,
                 'best_fitness': float(best_fit),

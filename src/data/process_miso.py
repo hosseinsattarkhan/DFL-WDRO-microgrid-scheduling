@@ -3,34 +3,33 @@ import glob
 import os
 from datetime import datetime, timedelta
 
-# مسیرها نسبت به ریشه پروژه تنظیم شده‌اند
+# Paths relative to the project root
 MISO_DIR = "data/raw/miso"
 OUTPUT_DIR = "data/processed"
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "miso_minn_hub_2010_2012.csv")
 
-# ساخت پوشه خروجی اگر وجود ندارد
+# Create output directory if it doesn't exist
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# پیدا کردن تمام فایل‌ها (با پسوند xls یا هر پسوند دیگری که با تاریخ شروع شود)
+# Find all files (with xls extension or any extension starting with a date)
 all_files = os.listdir(MISO_DIR)
 date_files = [f for f in all_files if f[:4].isdigit()]
 files = sorted([os.path.join(MISO_DIR, f) for f in date_files])
 
 if not files:
-    print(f"❌ هیچ فایلی در مسیر {MISO_DIR} پیدا نشد. لطفا فایل‌ها را کپی کنید.")
+    print(f"No files found in {MISO_DIR}. Please copy the files.")
     exit()
 
-print(f"تعداد فایل‌های پیدا شده: {len(files)}")
+print(f"Number of files found: {len(files)}")
 
 all_data = []
 
 for file_path in files:
     filename = os.path.basename(file_path)
-    date_str = filename.split('_')[0]  # استخراج تاریخ مثل 20121231
+    date_str = filename.split('_')[0]  # Extract date (e.g., 20121231)
     
     try:
-        # خواندن فایل. چون ساختار هدر دارد، با header=None می‌خوانیم
-        # از engine='openpyxl' یا 'xlrd' بسته به فرمت داخلی استفاده می‌کند
+        # Read the file (header=None because of the complex structure)
         try:
             df = pd.read_excel(file_path, header=None, engine='openpyxl')
         except:
@@ -39,12 +38,12 @@ for file_path in files:
         price_data = []
         for index, row in df.iterrows():
             col0 = str(row[0]).strip()
-            # پیدا کردن ردیف‌های ساعتی
+            # Find hourly rows
             if col0.startswith("Hour"):
                 hour_str = col0.replace("Hour", "").strip()
                 hour = int(hour_str)
                 
-                # قیمت Minnesota Hub در ستون چهارم (ایندکس 3) است
+                # Price for the Minnesota Hub is in the fourth column (index 3)
                 price_val = row[3] 
                 price_data.append((hour, price_val))
                 
@@ -57,20 +56,20 @@ for file_path in files:
                     'Price': float(price) if pd.notna(price) else None
                 })
         else:
-            print(f"⚠ هشدار: در فایل {filename} تعداد ساعت‌ها {len(price_data)} بود (باید 24 باشد).")
+            print(f"Warning: file {filename} has {len(price_data)} hours (expected 24).")
             
     except Exception as e:
-        print(f"❌ خطا در خواندن {filename}: {e}")
+        print(f"Error reading {filename}: {e}")
 
-# ذخیره خروجی
+# Save output
 final_df = pd.DataFrame(all_data)
 if not final_df.empty:
     final_df = final_df.sort_values('Timestamp').reset_index(drop=True)
     final_df.to_csv(OUTPUT_FILE, index=False)
-    print(f"\n✅ عملیات با موفقیت انجام شد!")
-    print(f"تعداد کل ردیف‌های استخراج شده: {len(final_df)}")
-    print(f"فایل نهایی در {OUTPUT_FILE} ذخیره شد.")
-    print("\n--- 3 ردیف اول ---")
+    print(f"\nOperation completed successfully!")
+    print(f"Total rows extracted: {len(final_df)}")
+    print(f"Final file saved to {OUTPUT_FILE}")
+    print("\n--- First 3 rows ---")
     print(final_df.head(3))
 else:
-    print("❌ هیچ داده‌ای استخراج نشد.")
+    print("No data extracted.")

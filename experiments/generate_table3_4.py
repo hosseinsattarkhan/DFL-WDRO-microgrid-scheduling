@@ -1,9 +1,11 @@
+"""
+Generate Tables 3 (solver comparison) and 4 (ablation study).
+"""
 import pyomo.environ as pyo
 import numpy as np
 import pandas as pd
 import sys
 import os
-import json
 import time
 from copy import deepcopy
 
@@ -13,11 +15,8 @@ from models.pyomo.master_ccg import build_master_ccg
 from models.pyomo.master_ieee33 import build_master_ieee33
 from src.habc.habc_pm import HABC_PM
 
-# ============================================================
-# بخش ۱: تابع اجرای C&CG (مشترک برای همه مدل‌ها)
-# ============================================================
 def run_ccg(instance_name, build_model_fn, scenarios, use_habc=True, max_iter=5, tol=0.01):
-    print(f"\n--- اجرای {instance_name} با {'HABC-PM' if use_habc else 'ABC ساده'} ---")
+    print(f"\n--- Running {instance_name} with {'HABC-PM' if use_habc else 'Standard ABC'} ---")
     
     start_time = time.time()
     LB = -np.inf
@@ -25,25 +24,23 @@ def run_ccg(instance_name, build_model_fn, scenarios, use_habc=True, max_iter=5,
     converged = False
     iterations = 0
     total_fitness_evals = 0
-    best_fitness_separation = -np.inf  # ← اضافه شد: بهترین fitness از Separation
+    best_fitness_separation = -np.inf
     
     for k in range(max_iter):
         iterations = k + 1
         
-        # === حل Master ===
         master_model = build_model_fn(scenarios)
         solver = pyo.SolverFactory('appsi_highs')
         results = solver.solve(master_model, tee=False)
         
         if results.solver.termination_condition != pyo.TerminationCondition.optimal:
-            print(f"Master حل نشد.")
+            print("Master failed to solve.")
             break
         
         current_LB = pyo.value(master_model.z)
         LB = max(LB, current_LB)
         UB = LB
         
-        # === حل Separation ===
         if instance_name == "IEEE 33-bus":
             dg_buses = [3, 18, 30]
             u_gen_vals = [sum(pyo.value(master_model.u_gen[t, b]) for b in dg_buses) / 3 for t in range(24)]
@@ -59,7 +56,6 @@ def run_ccg(instance_name, build_model_fn, scenarios, use_habc=True, max_iter=5,
             best = habc.run()
             total_fitness_evals += habc.pop_size * habc.max_iter
         
-        # ذخیره بهترین fitness از Separation
         if best['fitness'] > best_fitness_separation:
             best_fitness_separation = best['fitness']
         
@@ -80,35 +76,29 @@ def run_ccg(instance_name, build_model_fn, scenarios, use_habc=True, max_iter=5,
         'solver': 'HiGHS',
         'iterations': iterations,
         'objective': float(LB),
-        'best_fitness_separation': float(best_fitness_separation),  # ← مقدار جدید
+        'best_fitness_separation': float(best_fitness_separation),
         'gap_pct': float(gap * 100),
         'time_sec': float(total_time),
         'fitness_evals': total_fitness_evals,
         'converged': converged
     }
-# ============================================================
-# بخش ۲: تولید Table 7 (مقایسه Solver)
-# ============================================================
-def generate_table7():
+
+def generate_table3():
     print("\n" + "="*70)
-    print("تولید Table 7 (مقایسه HiGHS با GAMS)")
+    print("Generating Table 3 (Solver Comparison)")
     print("="*70)
     
     scenarios_10 = load_scenarios(num_scenarios=10)
     results = []
     
-    # --- Single-Bus ---
     sc1 = deepcopy(scenarios_10)
     res1 = run_ccg("Small (Single-Bus)", build_master_ccg, sc1, use_habc=True)
     results.append(res1)
     
-    # --- IEEE 33-bus ---
     sc2 = deepcopy(scenarios_10)
     res2 = run_ccg("IEEE 33-bus", build_master_ieee33, sc2, use_habc=True)
     results.append(res2)
     
-    # --- ساخت جدول ---
-    # ستون‌های GAMS را خالی می‌گذاریم
     table_data = []
     for r in results:
         table_data.append({
@@ -120,7 +110,6 @@ def generate_table7():
             'Time (s)': f"{r['time_sec']:.1f}",
         })
     
-    # اضافه کردن ردیف‌های GAMS (خالی)
     for r in results:
         table_data.append({
             'Instance': r['instance'],
@@ -133,18 +122,15 @@ def generate_table7():
     
     df = pd.DataFrame(table_data)
     os.makedirs("results/tables", exist_ok=True)
-    df.to_csv("results/tables/table7_solver_comparison.csv", index=False)
+    df.to_csv("results/tables/table3_solver_comparison.csv", index=False)
     
-    print("\nTable 7 (Solver Comparison):")
+    print("\nTable 3 (Solver Comparison):")
     print(df.to_string(index=False))
-    print("\n💾 ذخیره شد در results/tables/table7_solver_comparison.csv")
+    print("\nSaved to results/tables/table3_solver_comparison.csv")
 
-# ============================================================
-# بخش ۳: تولید Table 8 (Ablation - مقایسه HABC با ABC)
-# ============================================================
-def generate_table8():
+def generate_table4():
     print("\n" + "="*70)
-    print("تولید Table 8 (Ablation - HABC-PM vs Standard ABC)")
+    print("Generating Table 4 (Ablation Study)")
     print("="*70)
     
     scenarios_10 = load_scenarios(num_scenarios=10)
@@ -162,7 +148,6 @@ def generate_table8():
         res = run_ccg(inst_name, model_fn, sc, use_habc=False)
         results.append(res)
     
-    # ساخت جدول با استفاده از best_fitness_separation
     df = pd.DataFrame([{
         'Instance': r['instance'],
         'Algorithm': r['algorithm'],
@@ -172,19 +157,15 @@ def generate_table8():
     } for r in results])
     
     os.makedirs("results/tables", exist_ok=True)
-    df.to_csv("results/tables/table8_ablation.csv", index=False)
+    df.to_csv("results/tables/table4_ablation.csv", index=False)
     
-    print("\nTable 8 (Ablation Study - Separation Quality):")
+    print("\nTable 4 (Ablation Study - Separation Quality):")
     print(df.to_string(index=False))
-    print("\n💾 ذخیره شد در results/tables/table8_ablation.csv")
+    print("\nSaved to results/tables/table4_ablation.csv")
 
-# ============================================================
-# بخش ۴: اجرای اصلی
-# ============================================================
 if __name__ == "__main__":
-    generate_table7()
-    generate_table8()
-    
+    generate_table3()
+    generate_table4()
     print("\n" + "="*70)
-    print("✅ همه جداول تولید شدند.")
+    print("All tables generated.")
     print("="*70)

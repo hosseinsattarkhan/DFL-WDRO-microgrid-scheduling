@@ -1,5 +1,0 @@
-Instance,Algorithm,Worst-case Fitness,Time (s),Fitness Evals
-Small (Single-Bus),HABC-PM,2.3293,7.0,100
-IEEE 33-bus,HABC-PM,2.2927,9.2,100
-Small (Single-Bus),Standard ABC,2.0597,6.9,100
-IEEE 33-bus,Standard ABC,2.0549,9.2,100

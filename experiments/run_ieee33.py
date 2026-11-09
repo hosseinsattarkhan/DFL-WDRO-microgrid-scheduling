@@ -1,3 +1,6 @@
+"""
+Run C&CG on the IEEE 33-bus instance.
+"""
 import pyomo.environ as pyo
 import numpy as np
 import pandas as pd
@@ -7,7 +10,6 @@ import json
 import time
 from copy import deepcopy
 
-# اضافه کردن مسیر ریشه پروژه
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.data.data_loader import load_scenarios
 from models.pyomo.master_ieee33 import build_master_ieee33
@@ -15,8 +17,8 @@ from src.habc.habc_pm import HABC_PM
 
 def run_ccg_ieee33(instance_name, scenarios, epsilon=0.1, max_iter=5, tol=0.01):
     print(f"\n{'='*70}")
-    print(f"اجرای instance: {instance_name} (IEEE 33-bus)")
-    print(f"تعداد سناریوهای اولیه: {len(scenarios)}")
+    print(f"Running instance: {instance_name} (IEEE 33-bus)")
+    print(f"Number of initial scenarios: {len(scenarios)}")
     print(f"{'='*70}")
     
     start_time = time.time()
@@ -26,44 +28,37 @@ def run_ccg_ieee33(instance_name, scenarios, epsilon=0.1, max_iter=5, tol=0.01):
     UB = np.inf
     converged = False
     
-    # باس‌های DG (طبق داده‌های شبکه 33-bus)
     dg_buses = [3, 18, 30]
     
     for k in range(max_iter):
         iter_start = time.time()
-        print(f"\n--- تکرار {k+1}/{max_iter} ---")
+        print(f"\n--- Iteration {k+1}/{max_iter} ---")
         
-        # === گام ۱: حل Master ===
-        print("حل Master...")
+        print("Solving Master...")
         master_model = build_master_ieee33(scenarios)
         solver = pyo.SolverFactory('appsi_highs')
         results = solver.solve(master_model, tee=False)
         
         if results.solver.termination_condition != pyo.TerminationCondition.optimal:
-            print(f"❌ Master در تکرار {k+1} حل نشد.")
+            print(f"Master failed at iteration {k+1}.")
             break
         
         current_LB = pyo.value(master_model.z)
         if current_LB > LB:
             LB = current_LB
         
-        # UB را از Master می‌گیریم (چون HABC-PM قابل اعتماد نیست)
         current_UB = current_LB
         UB = current_LB
         
-        print(f"LB: {current_LB:.4f} (بهترین: {LB:.4f})")
-        print(f"UB (از Master): {current_UB:.4f} (بهترین: {UB:.4f})")
+        print(f"LB: {current_LB:.4f} (best: {LB:.4f})")
+        print(f"UB (from Master): {current_UB:.4f} (best: {UB:.4f})")
         
-        # === استخراج u_gen برای HABC-PM ===
-        # u_gen یک متغیر ۲۴×۳ است. برای HABC-PM به یک بردار ۲۴ تایی نیاز داریم.
-        # از میانگین تصمیم‌های ۳ واحد DG استفاده می‌کنیم.
         u_gen_vals = []
         for t in range(24):
             val = sum(pyo.value(master_model.u_gen[t, b]) for b in dg_buses) / len(dg_buses)
             u_gen_vals.append(val)
         
-        # === گام ۲: حل Separation با HABC-PM ===
-        print("حل Separation با HABC-PM...")
+        print("Solving Separation with HABC-PM...")
         habc = HABC_PM(u_gen_vals, scenarios, epsilon=epsilon,
                        pop_size=10, max_iter=10, p_inject=0.01)
         best = habc.run()
@@ -74,9 +69,8 @@ def run_ccg_ieee33(instance_name, scenarios, epsilon=0.1, max_iter=5, tol=0.01):
             'price': best['price'].tolist()
         }
         
-        print(f"HABC Fitness (سناریوی جدید): {best['fitness']:.4f}")
+        print(f"HABC Fitness (new scenario): {best['fitness']:.4f}")
         
-        # === گام ۳: بررسی همگرایی ===
         gap = abs(UB - LB) / max(abs(UB), 1e-10)
         print(f"Gap: {gap*100:.2f}%")
         
@@ -88,11 +82,10 @@ def run_ccg_ieee33(instance_name, scenarios, epsilon=0.1, max_iter=5, tol=0.01):
         history['time'].append(iter_time)
         
         if gap < tol:
-            print(f"✅ همگرایی در تکرار {k+1} (Gap = {gap*100:.2f}% < {tol*100}%)")
+            print(f"Converged at iteration {k+1} (Gap = {gap*100:.2f}% < {tol*100}%)")
             converged = True
             break
         
-        # === گام ۴: افزودن سناریو ===
         scenarios.append(worst_scenario)
     
     total_time = time.time() - start_time
@@ -110,16 +103,15 @@ def run_ccg_ieee33(instance_name, scenarios, epsilon=0.1, max_iter=5, tol=0.01):
     }
     
     print(f"\n{'='*70}")
-    print(f"نتیجه نهایی برای {instance_name}:")
+    print(f"Final result for {instance_name}:")
     print(f"  LB: {LB:.4f} | UB: {UB:.4f} | Gap: {abs(UB-LB)/max(abs(UB),1e-10)*100:.2f}%")
-    print(f"  همگرا: {converged} | زمان کل: {total_time:.1f} ثانیه | تکرار: {len(history['iter'])}")
+    print(f"  Converged: {converged} | Total time: {total_time:.1f} s | Iterations: {len(history['iter'])}")
     print(f"{'='*70}")
     
     return result
 
 if __name__ == "__main__":
-    # === تنظیمات ===
-    N_SCENARIOS = 10       # فعلاً 10 سناریو (چون مدل 33-bus سنگین است)
+    N_SCENARIOS = 10
     EPSILON = 0.1
     MAX_ITER = 5
     TOL = 0.01
@@ -127,11 +119,10 @@ if __name__ == "__main__":
     os.makedirs("results/tables", exist_ok=True)
     os.makedirs("results/logs", exist_ok=True)
     
-    print(f"بارگذاری {N_SCENARIOS} سناریو...")
+    print(f"Loading {N_SCENARIOS} scenarios...")
     scenarios = load_scenarios(num_scenarios=N_SCENARIOS)
-    print(f"✅ {len(scenarios)} سناریو بارگذاری شد.")
+    print(f"Loaded {len(scenarios)} scenarios.")
     
-    # ساخت یک کپی برای اینکه سناریوهای اصلی دست‌نخورده بمانند
     scenarios_copy = deepcopy(scenarios)
     
     result = run_ccg_ieee33(
@@ -141,4 +132,4 @@ if __name__ == "__main__":
     
     with open("results/logs/ieee33_result.json", "w") as f:
         json.dump(result, f, indent=2)
-    print(f"💾 نتیجه در results/logs/ieee33_result.json ذخیره شد.")
+    print(f"Result saved to results/logs/ieee33_result.json")

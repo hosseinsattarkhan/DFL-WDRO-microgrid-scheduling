@@ -1,3 +1,6 @@
+"""
+Run full C&CG-HABC-PM experiments on four instance names.
+"""
 import pyomo.environ as pyo
 import numpy as np
 import pandas as pd
@@ -14,8 +17,8 @@ from src.habc.habc_pm import HABC_PM
 
 def run_ccg_habc_for_instance(instance_name, scenarios, epsilon=0.1, max_iter=10, tol=0.01):
     print(f"\n{'='*70}")
-    print(f"اجرای instance: {instance_name}")
-    print(f"تعداد سناریوهای اولیه: {len(scenarios)}")
+    print(f"Running instance: {instance_name}")
+    print(f"Number of initial scenarios: {len(scenarios)}")
     print(f"{'='*70}")
     
     start_time = time.time()
@@ -28,37 +31,32 @@ def run_ccg_habc_for_instance(instance_name, scenarios, epsilon=0.1, max_iter=10
     
     for k in range(max_iter):
         iter_start = time.time()
-        print(f"\n--- تکرار {k+1}/{max_iter} ---")
+        print(f"\n--- Iteration {k+1}/{max_iter} ---")
         
-        # === گام ۱: حل Master ===
         master_model = build_master_ccg(scenarios)
         solver = pyo.SolverFactory('appsi_highs')
         results = solver.solve(master_model, tee=False)
         
         if results.solver.termination_condition != pyo.TerminationCondition.optimal:
-            print(f"❌ Master در تکرار {k+1} حل نشد.")
+            print(f"Master failed at iteration {k+1}.")
             break
         
         current_LB = pyo.value(master_model.objective)
         if current_LB > LB:
             LB = current_LB
         
-
-        # UB از Master (z)
-        current_UB = pyo.value(master_model.z)  # بدون epsilon
+        current_UB = pyo.value(master_model.z)
         if current_UB < UB:
-            UB = current_UB 
-
+            UB = current_UB
         
         u_gen_vals = [pyo.value(master_model.u_gen[t]) for t in range(24)]
         best_u_gen = u_gen_vals
         
-        print(f"LB: {current_LB:.4f} (بهترین: {LB:.4f})")
-        print(f"UB (از Master): {current_UB:.4f} (بهترین: {UB:.4f})")
+        print(f"LB: {current_LB:.4f} (best: {LB:.4f})")
+        print(f"UB (from Master): {current_UB:.4f} (best: {UB:.4f})")
         
-        # === گام ۲: حل Separation با HABC-PM ===
         habc = HABC_PM(u_gen_vals, scenarios, epsilon=epsilon,
-                       pop_size=15, max_iter=20, p_inject=0.01)  # p_inject کاهش یافت
+                       pop_size=15, max_iter=20, p_inject=0.01)
         best = habc.run()
         
         worst_scenario = {
@@ -67,15 +65,12 @@ def run_ccg_habc_for_instance(instance_name, scenarios, epsilon=0.1, max_iter=10
             'price': best['price'].tolist()
         }
         
-        # فقط اگر HABC-PM سناریوی بهتری پیدا کرد، آن را اضافه کن
-        # (این کار از افزایش بی‌رویه LB جلوگیری می‌کند)
         if best['fitness'] > current_LB:
             scenarios.append(worst_scenario)
-            print(f"✅ سناریوی جدید اضافه شد (fitness = {best['fitness']:.4f})")
+            print(f"New scenario added (fitness = {best['fitness']:.4f})")
         else:
-            print(f"⚠️ HABC-PM سناریوی بهتری پیدا نکرد (fitness = {best['fitness']:.4f})")
+            print(f"HABC-PM did not find a better scenario (fitness = {best['fitness']:.4f})")
         
-        # === گام ۳: بررسی همگرایی ===
         gap = abs(UB - LB) / max(abs(UB), 1e-10)
         print(f"Gap: {gap*100:.2f}%")
         
@@ -88,7 +83,7 @@ def run_ccg_habc_for_instance(instance_name, scenarios, epsilon=0.1, max_iter=10
         history['time'].append(iter_time)
         
         if gap < tol:
-            print(f"✅ همگرایی در تکرار {k+1} (Gap = {gap*100:.2f}% < {tol*100}%)")
+            print(f"Converged at iteration {k+1} (Gap = {gap*100:.2f}% < {tol*100}%)")
             converged = True
             break
     
@@ -109,9 +104,9 @@ def run_ccg_habc_for_instance(instance_name, scenarios, epsilon=0.1, max_iter=10
     }
     
     print(f"\n{'='*70}")
-    print(f"نتیجه نهایی برای {instance_name}:")
+    print(f"Final result for {instance_name}:")
     print(f"  LB: {LB:.4f} | UB: {UB:.4f} | Gap: {abs(UB-LB)/max(abs(UB),1e-10)*100:.2f}%")
-    print(f"  همگرا: {converged} | زمان کل: {total_time:.1f} ثانیه | تکرار: {len(history['iter'])}")
+    print(f"  Converged: {converged} | Total time: {total_time:.1f} s | Iterations: {len(history['iter'])}")
     print(f"{'='*70}")
     
     return result
@@ -126,15 +121,15 @@ def main():
     os.makedirs("results/tables", exist_ok=True)
     os.makedirs("results/logs", exist_ok=True)
     
-    print(f"بارگذاری {N_SCENARIOS} سناریو از دیتاست...")
+    print(f"Loading {N_SCENARIOS} scenarios...")
     all_scenarios = load_scenarios(num_scenarios=N_SCENARIOS)
-    print(f"✅ {len(all_scenarios)} سناریو بارگذاری شد.")
+    print(f"Loaded {len(all_scenarios)} scenarios.")
     
     all_results = []
     
     for instance in INSTANCES:
         print(f"\n{'#'*70}")
-        print(f"# شروع instance: {instance}")
+        print(f"# Starting instance: {instance}")
         print(f"{'#'*70}")
         
         scenarios_copy = deepcopy(all_scenarios)
@@ -147,7 +142,7 @@ def main():
         
         with open(f"results/logs/{instance}_result.json", "w") as f:
             json.dump(result, f, indent=2)
-        print(f"💾 نتیجه در results/logs/{instance}_result.json ذخیره شد.")
+        print(f"Result saved to results/logs/{instance}_result.json")
     
     summary = pd.DataFrame([{
         'instance': r['instance'],
@@ -161,10 +156,10 @@ def main():
     } for r in all_results])
     
     summary.to_csv("results/tables/ccg_habc_summary.csv", index=False)
-    print(f"\n✅ خلاصه در results/tables/ccg_habc_summary.csv ذخیره شد.")
+    print(f"\nSummary saved to results/tables/ccg_habc_summary.csv")
     
     print("\n" + "="*70)
-    print("خلاصه نتایج:")
+    print("Summary of results:")
     print("="*70)
     print(summary.to_string(index=False))
     print("="*70)

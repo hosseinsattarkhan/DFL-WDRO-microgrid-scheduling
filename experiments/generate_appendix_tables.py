@@ -1,3 +1,6 @@
+"""
+Generate supplementary tables D1-D5 for the manuscript.
+"""
 import pyomo.environ as pyo
 import numpy as np
 import pandas as pd
@@ -13,8 +16,8 @@ from models.pyomo.master_ccg import build_master_ccg
 from src.habc.habc_pm import HABC_PM
 
 def run_ccg_with_logging(instance_name, build_model_fn, scenarios, epsilon=0.1, max_iter=5, tol=0.01):
-    """اجرای C&CG با ذخیره لاگ‌های کامل برای D1-D5"""
-    print(f"\n--- اجرای {instance_name} ---")
+    """Run C&CG and log diagnostics for Tables D1-D5."""
+    print(f"\n--- Running {instance_name} ---")
     
     start_time = time.time()
     history = []
@@ -27,7 +30,7 @@ def run_ccg_with_logging(instance_name, build_model_fn, scenarios, epsilon=0.1, 
     for k in range(max_iter):
         iter_start = time.time()
         
-        # حل Master
+        # Solve Master
         master_start = time.time()
         master_model = build_model_fn(scenarios)
         solver = pyo.SolverFactory('appsi_highs')
@@ -42,14 +45,14 @@ def run_ccg_with_logging(instance_name, build_model_fn, scenarios, epsilon=0.1, 
             LB = current_LB
         UB = LB
         
-        # استخراج u_gen
+        # Extract u_gen
         if instance_name == "IEEE 33-bus":
             dg_buses = [3, 18, 30]
             u_gen_vals = [sum(pyo.value(master_model.u_gen[t, b]) for b in dg_buses) / 3 for t in range(24)]
         else:
             u_gen_vals = [pyo.value(master_model.u_gen[t]) for t in range(24)]
         
-        # حل Separation
+        # Solve Separation
         sep_start = time.time()
         habc = HABC_PM(u_gen_vals, scenarios, epsilon=epsilon, pop_size=10, max_iter=10, p_inject=0.01)
         best = habc.run()
@@ -89,9 +92,9 @@ def run_ccg_with_logging(instance_name, build_model_fn, scenarios, epsilon=0.1, 
     }
 
 def generate_d1(results_list):
-    """D1: C&CG iterations"""
+    """D1: C&CG iteration history."""
     print("\n" + "="*70)
-    print("تولید D1 (C&CG Iterations)")
+    print("Generating D1 (C&CG Iterations)")
     print("="*70)
     
     rows = []
@@ -108,12 +111,12 @@ def generate_d1(results_list):
     df = pd.DataFrame(rows)
     df.to_csv("results/tables/tableD1_ccg_iterations.csv", index=False)
     print(df.to_string(index=False))
-    print("💾 ذخیره شد در results/tables/tableD1_ccg_iterations.csv")
+    print("Saved to results/tables/tableD1_ccg_iterations.csv")
 
 def generate_d2(results_list):
-    """D2: Scout Firing Diagnostics"""
+    """D2: Scout firing diagnostics."""
     print("\n" + "="*70)
-    print("تولید D2 (Scout Firing Diagnostics)")
+    print("Generating D2 (Scout Firing Diagnostics)")
     print("="*70)
     
     rows = []
@@ -128,15 +131,14 @@ def generate_d2(results_list):
     df = pd.DataFrame(rows)
     df.to_csv("results/tables/tableD2_scout_fires.csv", index=False)
     print(df.to_string(index=False))
-    print("💾 ذخیره شد در results/tables/tableD2_scout_fires.csv")
+    print("Saved to results/tables/tableD2_scout_fires.csv")
 
 def generate_d3(results_list):
-    """D3: HABC-PM Iteration Log (for one instance)"""
+    """D3: HABC-PM iteration log (for the first instance)."""
     print("\n" + "="*70)
-    print("تولید D3 (HABC-PM Iteration Log)")
+    print("Generating D3 (HABC-PM Iteration Log)")
     print("="*70)
     
-    # فقط لاگ اولین instance را ذخیره می‌کنیم
     first_res = results_list[0]
     rows = []
     for iter_idx, log in enumerate(first_res['iteration_logs']):
@@ -151,13 +153,13 @@ def generate_d3(results_list):
     df = pd.DataFrame(rows)
     df.to_csv("results/tables/tableD3_habc_log.csv", index=False)
     print(df.head(10).to_string(index=False))
-    print("... (نمایش 10 ردیف اول)")
-    print("💾 ذخیره شد در results/tables/tableD3_habc_log.csv")
+    print("... (showing first 10 rows)")
+    print("Saved to results/tables/tableD3_habc_log.csv")
 
 def generate_d4(results_list):
-    """D4: Timing Breakdown"""
+    """D4: Timing breakdown."""
     print("\n" + "="*70)
-    print("تولید D4 (Timing Breakdown)")
+    print("Generating D4 (Timing Breakdown)")
     print("="*70)
     
     rows = []
@@ -179,25 +181,22 @@ def generate_d4(results_list):
     df = pd.DataFrame(rows)
     df.to_csv("results/tables/tableD4_timing.csv", index=False)
     print(df.to_string(index=False))
-    print("💾 ذخیره شد در results/tables/tableD4_timing.csv")
+    print("Saved to results/tables/tableD4_timing.csv")
 
 def generate_d5():
-    """D5: HABC-PM Sensitivity to pop_size and p_inject"""
+    """D5: Sensitivity of HABC-PM to pop_size and p_inject."""
     print("\n" + "="*70)
-    print("تولید D5 (Sensitivity to HABC-PM Parameters)")
+    print("Generating D5 (Sensitivity to HABC-PM Parameters)")
     print("="*70)
     
     scenarios = load_scenarios(num_scenarios=10)
     
-    # پارامترهای مورد بررسی
     pop_sizes = [5, 10, 20]
     p_injects = [0.01, 0.05, 0.1]
     
     rows = []
     for pop_size in pop_sizes:
         for p_inject in p_injects:
-            # اجرای HABC-PM با این پارامترها (فقط برای Small)
-            # u_gen = 1 (فرض)
             u_gen_vals = [1.0] * 24
             habc = HABC_PM(u_gen_vals, scenarios, epsilon=0.1, 
                           pop_size=pop_size, max_iter=10, p_inject=p_inject)
@@ -214,35 +213,32 @@ def generate_d5():
     df = pd.DataFrame(rows)
     df.to_csv("results/tables/tableD5_habc_sensitivity.csv", index=False)
     print("\n" + df.to_string(index=False))
-    print("💾 ذخیره شد در results/tables/tableD5_habc_sensitivity.csv")
+    print("Saved to results/tables/tableD5_habc_sensitivity.csv")
 
 def main():
     os.makedirs("results/tables", exist_ok=True)
     
-    # اجرای C&CG برای دو instance
     scenarios = load_scenarios(num_scenarios=10)
     
-    print("اجرای C&CG برای Small...")
+    print("Running C&CG for Small...")
     res_small = run_ccg_with_logging("Small (Single-Bus)", build_master_ccg, deepcopy(scenarios))
     
-    print("اجرای C&CG برای IEEE 33-bus...")
+    print("Running C&CG for IEEE 33-bus...")
     from models.pyomo.master_ieee33 import build_master_ieee33
     res_33 = run_ccg_with_logging("IEEE 33-bus", build_master_ieee33, deepcopy(scenarios))
     
     results_list = [res_small, res_33]
     
-    # تولید جداول
     generate_d1(results_list)
     generate_d2(results_list)
     generate_d3(results_list)
     generate_d4(results_list)
     generate_d5()
     
-    # ذخیره JSON کامل
     with open("results/logs/appendix_results.json", "w") as f:
         json.dump(results_list, f, indent=2, default=str)
-    print("\n💾 نتایج کامل در results/logs/appendix_results.json ذخیره شد.")
-    print("\n✅ همه جداول D1-D5 تولید شدند.")
+    print("\nFull results saved to results/logs/appendix_results.json")
+    print("\nAll tables D1-D5 generated.")
 
 if __name__ == "__main__":
     main()

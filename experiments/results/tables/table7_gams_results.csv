@@ -1,0 +1,2 @@
+Instance,Solver,Master Time (s),Separation Time (s),Note
+Small (Single-Bus),GAMS (CPLEX),0.2,0.2,Check GAMS listing (.lst) file for objective

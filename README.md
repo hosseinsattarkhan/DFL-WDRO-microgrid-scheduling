@@ -1,6 +1,6 @@
 ﻿# Decision-Focused Learning for Wasserstein DRO Microgrid Scheduling
 
-Python implementation of the framework described in V23 of the manuscript.
+Python implementation of the framework described the manuscript.
 
 ## Architecture
 

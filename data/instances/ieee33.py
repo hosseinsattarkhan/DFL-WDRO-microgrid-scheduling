@@ -1,22 +1,22 @@
 """
-داده‌های شبکه IEEE 33-bus (شبکه توزیع شعاعی).
-منبع: Baran & Wu (1989), "Network reconfiguration in distribution systems"
+IEEE 33-bus distribution network data.
+Source: Baran & Wu (1989), "Network reconfiguration in distribution systems"
 """
 
-# تعداد باس‌ها
+# Number of buses
 N_BUS = 33
 
-# تعداد خطوط (شاخه‌ها)
+# Number of branches (lines)
 N_BRANCH = 32
 
-# ولتاژ پایه (kV)
+# Base voltage (kV)
 V_BASE = 12.66
 
-# توان پایه (MVA)
+# Base power (MVA)
 S_BASE = 10.0
 
-# امپدانس خطوط: (from_bus, to_bus, R_ohm, X_ohm)
-# بر اساس داده‌های استاندارد IEEE 33-bus
+# Line impedances: (from_bus, to_bus, R_ohm, X_ohm)
+# Based on standard IEEE 33-bus data
 LINES = [
     (0, 1, 0.0922, 0.0470), (1, 2, 0.4930, 0.2511), (2, 3, 0.3660, 0.1864),
     (3, 4, 0.3811, 0.1941), (4, 5, 0.8190, 0.7070), (5, 6, 0.1872, 0.6188),
@@ -31,7 +31,7 @@ LINES = [
     (30, 31, 0.3105, 0.3619), (31, 32, 0.3410, 0.5302),
 ]
 
-# بار باس‌ها: (bus, P_kW, Q_kVar)
+# Bus loads: (bus, P_kW, Q_kVar)
 LOADS = [
     (1, 100, 60), (2, 90, 40), (3, 120, 80), (4, 60, 30), (5, 60, 20),
     (6, 200, 100), (7, 200, 100), (8, 60, 20), (9, 60, 20), (10, 45, 30),
@@ -42,18 +42,18 @@ LOADS = [
     (31, 150, 70), (32, 210, 100),
 ]
 
-# موقعیت DERها (باس‌هایی که PV، Wind، DG، باتری در آن‌ها نصب می‌شوند)
+# DER locations (buses where PV, Wind, DG, and ESS are installed)
 DER_LOCATIONS = {
-    'pv': [6, 14],       # 2 واحد PV
-    'wind': [9, 24],     # 2 واحد Wind
-    'dg': [3, 18, 30],   # 3 واحد DG
-    'ess': [12],         # 1 واحد باتری
+    'pv': [6, 14],       # 2 PV units
+    'wind': [9, 24],     # 2 Wind units
+    'dg': [3, 18, 30],   # 3 DG units
+    'ess': [12],         # 1 ESS unit
 }
 
-# ظرفیت DERها (MW)
+# DER capacities (MW)
 DER_CAPACITY = {
-    'pv': [0.5, 0.5],     # هر واحد 0.5 MW
+    'pv': [0.5, 0.5],     # 0.5 MW each
     'wind': [0.5, 0.5],
     'dg': [0.3, 0.3, 0.3],
-    'ess': [1.0],          # باتری 1 MWh
+    'ess': [1.0],          # 1 MWh battery
 }

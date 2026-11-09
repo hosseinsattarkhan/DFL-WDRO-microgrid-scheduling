@@ -1,5 +1,0 @@
-Instance,Solver,Iterations,Objective (LB=UB),Gap (%),Time (s)
-Small (Single-Bus),HiGHS (Pyomo),1,2.2069,0.00,6.8
-IEEE 33-bus,HiGHS (Pyomo),1,1.4462,0.00,9.2
-Small (Single-Bus),GAMS (CPLEX),[[TBD]],[[TBD]],[[TBD]],[[TBD]]
-IEEE 33-bus,GAMS (CPLEX),[[TBD]],[[TBD]],[[TBD]],[[TBD]]
